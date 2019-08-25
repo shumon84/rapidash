@@ -33,7 +33,7 @@ func NewFirstLevelCacheMap() *FirstLevelCacheMap {
 
 type FirstLevelCache struct {
 	typ          *Struct
-	indexTrees   map[string]*BTree
+	indexTrees   map[string]IndexTree
 	findAllValue *StructSliceValue
 	primaryKey   string
 	valueFactory *ValueFactory
@@ -42,7 +42,7 @@ type FirstLevelCache struct {
 func NewFirstLevelCache(s *Struct) *FirstLevelCache {
 	return &FirstLevelCache{
 		typ:          s,
-		indexTrees:   map[string]*BTree{},
+		indexTrees:   map[string]IndexTree{},
 		valueFactory: NewValueFactory(),
 	}
 }
@@ -202,7 +202,7 @@ func (c *FirstLevelCache) makeBTree(allLeaf *StructSliceValue, indexColumns ...s
 
 func (c *FirstLevelCache) FindByPrimaryKey(key *Value, unmarshaler Unmarshaler) error {
 	tree := c.indexTrees[c.primaryKey]
-	if tree.root.isWithoutBranchAndLeaf() {
+	if tree.isEmpty() {
 		return nil
 	}
 	leaf := tree.searchEq(key)
@@ -221,7 +221,7 @@ func (c *FirstLevelCache) FindByPrimaryKey(key *Value, unmarshaler Unmarshaler) 
 	return nil
 }
 
-func (c *FirstLevelCache) findIndexTreeByQueryBuilder(builder *QueryBuilder) *BTree {
+func (c *FirstLevelCache) findIndexTreeByQueryBuilder(builder *QueryBuilder) IndexTree {
 	indexes := builder.indexes()
 	for _, index := range indexes {
 		for k, tree := range c.indexTrees {
@@ -233,7 +233,7 @@ func (c *FirstLevelCache) findIndexTreeByQueryBuilder(builder *QueryBuilder) *BT
 	return nil
 }
 
-func (c *FirstLevelCache) searchByTree(tree *BTree, conditions *Conditions) (*StructSliceValue, error) {
+func (c *FirstLevelCache) searchByTree(tree IndexTree, conditions *Conditions) (*StructSliceValue, error) {
 	totalValues := NewStructSliceValue()
 	leafsOrTrees := conditions.Current().Search(tree)
 	for _, leafsOrTree := range leafsOrTrees {
@@ -249,7 +249,7 @@ func (c *FirstLevelCache) searchByTree(tree *BTree, conditions *Conditions) (*St
 			totalValues.AppendSlice(values)
 			continue
 		}
-		tree, ok := leafsOrTree.(*BTree)
+		tree, ok := leafsOrTree.(IndexTree)
 		if ok {
 			values, err := c.searchByTree(tree, conditions)
 			if err != nil {
@@ -269,7 +269,7 @@ func (c *FirstLevelCache) findByQueryBuilder(builder *QueryBuilder) (*StructSlic
 	}
 	conditions := builder.conditions
 	defer conditions.Reset()
-	var indexTree *BTree
+	var indexTree IndexTree
 	if builder.AvailableIndex() {
 		indexTree = c.findIndexTreeByQueryBuilder(builder)
 	}
@@ -286,7 +286,7 @@ func (c *FirstLevelCache) findByQueryBuilder(builder *QueryBuilder) (*StructSlic
 		values.Sort(builder.orderConditions)
 		return values, nil
 	}
-	if indexTree.root.isWithoutBranchAndLeaf() {
+	if indexTree.isEmpty() {
 		return NewStructSliceValue(), nil
 	}
 	totalValues, err := c.searchByTree(indexTree, conditions)

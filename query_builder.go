@@ -435,7 +435,7 @@ type Condition interface {
 	Value() *Value
 	Column() string
 	Compare(v *Value) bool
-	Search(*BTree) []Leaf
+	Search(IndexTree) []Leaf
 	Query() string
 	QueryArgs() []interface{}
 	Build(*ValueFactory)
@@ -906,7 +906,7 @@ func (c *EQCondition) Compare(value *Value) bool {
 	return value.EQ(c.value)
 }
 
-func (c *EQCondition) Search(tree *BTree) []Leaf {
+func (c *EQCondition) Search(tree IndexTree) []Leaf {
 	result := tree.searchEq(c.value)
 	if result == nil {
 		return []Leaf{}
@@ -975,7 +975,7 @@ func (c *NEQCondition) Compare(value *Value) bool {
 	return value.NEQ(c.value)
 }
 
-func (c *NEQCondition) Search(tree *BTree) []Leaf {
+func (c *NEQCondition) Search(tree IndexTree) []Leaf {
 	log.Warn("not support not equal search")
 	return nil
 }
@@ -1021,7 +1021,7 @@ func (c *GTCondition) Compare(value *Value) bool {
 	return value.GT(c.value)
 }
 
-func (c *GTCondition) Search(tree *BTree) []Leaf {
+func (c *GTCondition) Search(tree IndexTree) []Leaf {
 	return tree.searchGt(c.value)
 }
 
@@ -1066,7 +1066,7 @@ func (c *GTECondition) Compare(value *Value) bool {
 	return value.GTE(c.value)
 }
 
-func (c *GTECondition) Search(tree *BTree) []Leaf {
+func (c *GTECondition) Search(tree IndexTree) []Leaf {
 	return tree.searchGte(c.value)
 }
 
@@ -1111,7 +1111,7 @@ func (c *LTCondition) Compare(value *Value) bool {
 	return value.LT(c.value)
 }
 
-func (c *LTCondition) Search(tree *BTree) []Leaf {
+func (c *LTCondition) Search(tree IndexTree) []Leaf {
 	return tree.searchLt(c.value)
 }
 
@@ -1156,7 +1156,7 @@ func (c *LTECondition) Compare(value *Value) bool {
 	return value.LTE(c.value)
 }
 
-func (c *LTECondition) Search(tree *BTree) []Leaf {
+func (c *LTECondition) Search(tree IndexTree) []Leaf {
 	return tree.searchLte(c.value)
 }
 
@@ -1214,7 +1214,7 @@ func (c *INCondition) Compare(value *Value) bool {
 	return false
 }
 
-func (c *INCondition) Search(tree *BTree) []Leaf {
+func (c *INCondition) Search(tree IndexTree) []Leaf {
 	leafs := []Leaf{}
 	for _, v := range c.values {
 		value := tree.searchEq(v)
