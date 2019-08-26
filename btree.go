@@ -15,9 +15,6 @@ type BTree struct {
 	root *Node
 }
 
-type Leaf interface {
-}
-
 func NewBTree() *BTree {
 	return &BTree{
 		root: NewNode(),
@@ -83,6 +80,10 @@ func (t *BTree) insert(key *Value, value Leaf) {
 
 func (t *BTree) dump() {
 	t.root.dump(1)
+}
+
+func (t *BTree) isEmpty() bool {
+	return t.root.isWithoutBranchAndLeaf()
 }
 
 type Node struct {
